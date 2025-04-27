@@ -1,10 +1,10 @@
-# InfoGenAI - Zero-shot News Article Trustworthiness Classifier
+# InfoFactAgents - Zero-shot News Article Trustworthiness Classifier
 
-**InfoGenAI** is a powerful, AI-driven tool designed to classify and assess the trustworthiness of news articles in real-time. It leverages advanced large language models (LLMs) and retrieval-augmented generation (RAG) techniques to evaluate articles based on a variety of factors, including factual accuracy, bias detection, and source credibility, all without requiring any training data specific to the articles at hand. **InfoGenAI** uses multiple specialized agents to classify and score news articles on their reliability.
+**InfoFactAgents** is a powerful, AI-driven tool designed to classify and assess the trustworthiness of news articles in real-time. It leverages advanced large language models (LLMs) and retrieval-augmented generation (RAG) techniques to evaluate articles based on a variety of factors, including factual accuracy, bias detection, and source credibility, all without requiring any training data specific to the articles at hand. **InfoFactAgents** uses multiple specialized agents to classify and score news articles on their reliability.
 
 ## Architecture Overview
 
-![InfoGenAI Architecture](path_to_image)
+![InfoFactAgents Architecture](path_to_image)
 
 ### Front-End Components
 The front-end consists of multiple user interfaces, making it easy to interact with the classification system:
@@ -22,14 +22,14 @@ The back-end is responsible for processing the articles, managing data, and hand
   
 - **Flask**: A lightweight WSGI web framework that serves as the backbone for API creation, handling the communication between front-end and back-end.
   
-- **InfoGenAI Models**: The core AI components that classify news articles based on various agents (metadata evaluation, factual consistency, linguistic analysis, etc.).
+- **InfoFactAgents Models**: The core AI components that classify news articles based on various agents (metadata evaluation, factual consistency, linguistic analysis, etc.).
   
 - **Ollama**: A platform for running local large language models (LLMs), enabling AI processing for decision-making based on information provided by agents.
 
 - **Retrieval-Augmented Generation (RAG)**: Used to enhance the AI's decision-making by serving data collected from specialized agents, allowing the **Ollama** LLM to make better, more informed decisions when analyzing news articles.
 
 ### Specialized Agents
-InfoGenAI uses multiple specialized agents to evaluate and classify the news articles based on different criteria:
+InfoFactAgents uses multiple specialized agents to evaluate and classify the news articles based on different criteria:
 
 - **Metadata & Source Credibility Agent**: Analyzes the article's metadata (e.g., publication date, author credentials, source reliability) to assess the overall credibility of the news source.
   
@@ -71,4 +71,4 @@ Each of these agents works independently to evaluate different aspects of the ar
 4. **Trustworthiness scores and explanations** are generated and sent back to the user.
 5. The results are presented via the **Gradio interface** or the API, depending on the user's interaction method.
 
-This architecture enables **InfoGenAI** to perform zero-shot classification of news articles, analyzing their trustworthiness without requiring pre-labeled datasets. It ensures reliability and flexibility in evaluating news content.
+This architecture enables **InfoFactAgents** to perform zero-shot classification of news articles, analyzing their trustworthiness without requiring pre-labeled datasets. It ensures reliability and flexibility in evaluating news content.
