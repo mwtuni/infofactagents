@@ -7,7 +7,8 @@ class FactualConsistencyAgent:
     description = "Verifies the factual accuracy of the article by cross-referencing its claims with external sources."
 
     def __init__(self):
-        # Ensure the API key is set
+
+        # Ensure the OPENAI API key is set
         api_key = os.environ.get("OPENAI_API_KEY")
         if api_key is None:
             raise ValueError("API key not found. Please set the OPENAI_API_KEY environment variable.")
@@ -20,6 +21,26 @@ class FactualConsistencyAgent:
         if google_api_key is None:
             raise ValueError("Google API key not found. Please set the GOOGLE_API_KEY environment variable.")
         self.google_client = build("factchecktools", "v1alpha1", developerKey=google_api_key)
+        self.test_google_api()
+
+    def test_google_api(self):
+        # Test Google API with a known false claim
+        query = "The Earth is flat"
+        try:
+            response = self.google_client.claims().search(query=query).execute()
+
+            # Check for textualRating indicating "False"
+            if "claims" in response:
+                for item in response["claims"]:
+                    reviews = item.get("claimReview", [])
+                    for review in reviews:
+                        textual_rating = review.get("textualRating", "").lower()
+                        if "false" in textual_rating:
+                            print(f"✅ Google API check works: Found 'False' textualRating for query '{query}'.")
+                            return
+            print(f"⚠️ Google API check did not find any 'False' textualRating for query '{query}'.")
+        except Exception as e:
+            print(f"Error: {e}")
 
     def search_evidence(self, claim):
         """
@@ -83,7 +104,7 @@ class FactualConsistencyAgent:
         extract_claims_prompt = (
             f"Carefully read the following article and extract all factual claims explicitly mentioned in it:\n\n"
             f"{article_text}\n\n"
-            f"List each claim as a separate bullet point. Ensure the claims are directly based on the text and avoid adding inferred or assumed information. "
+            f"List each claim as a separate line of text without formatting. Ensure the claims are directly based on the text and avoid adding inferred or assumed information. "
             f"Make sure each claim is self-contained and includes all necessary context to be understood independently. "
             f"Do not attempt to fix any factual errors or inconsistencies in the text."
         )
@@ -141,23 +162,24 @@ if __name__ == "__main__":
         "The tower attracts over 7 million visitors annually, contributing significantly to France's tourism revenue. "
         "Some historians claim that the Eiffel Tower was originally intended to be built in Barcelona, Spain, but the proposal was rejected. "
         "Additionally, the tower was used as a military radio transmission hub during World War I, playing a crucial role in communication. "
-        "In recent years, the Eiffel Tower has undergone extensive renovations to improve its structural integrity and sustainability."
+        "In recent years, the Eiffel Tower has undergone extensive renovations to improve its structural integrity and sustainability. Earth is triangular."
     )
 
     # Step 1: Extract claims
     claims = agent.extract_claims(example_article)
-    print("Extracted Claims:")
+    print("\n1 Claims extracted by LLM:")
     for claim in claims:
-        print(f"- {claim}")
+        print(f"{claim}")
 
     # Step 2: Evaluate claims
     evaluations = agent.evaluate_claims(claims)
-    print("\nClaim Evaluations:")
+    print("\n2 Claims Evaluated by LLM:")
     for claim, result in evaluations.items():
-        print(f"- {claim}: {result}")
+        symbol = "✅" if result == "True" else "❌"
+        print(f"{symbol} {claim}: {result}")
 
     # Step 3: Verify false claims with Google Fact Check Tools API
-    print("\nVerifying False Claims:")
+    print("\n3 False Claims Verified by Google Fact Check API:")
     for claim, result in evaluations.items():
         if result == "False":
             evidence = agent.search_evidence(claim)
