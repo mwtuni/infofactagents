@@ -39,6 +39,33 @@ class FactualConsistencyAgent:
         chatgpt_reply = chat_completion.choices[0].message.content
         return chatgpt_reply
 
+    # Define function to extract claims from the article
+    def extract_claims(self, article_text):
+        """
+        Extract claims from the article.
+        :param article_text: The text of the article to analyze.
+        :return: A list of extracted claims.
+        """
+        # Prepare the article text as a prompt for the AI
+        extract_claims_prompt = (
+            f"Carefully read the following article and extract all factual claims explicitly mentioned in it:\n\n"
+            f"{article_text}\n\n"
+            f"List each claim as a separate bullet point. Ensure the claims are directly based on the text and avoid adding inferred or assumed information. "
+            f"Make sure each claim is self-contained and includes all necessary context to be understood independently. "
+            f"Do not attempt to fix any factual errors or inconsistencies in the text."
+        )
+
+        # Use OpenAI to extract claims
+        chat_completion = self.client.chat.completions.create(
+            messages=[
+                {"role": "system", "content": "You are an expert in analyzing text and extracting factual claims. Your task is to extract claims exactly as they appear in the text without making corrections or assumptions. Ensure each claim is self-contained and includes all necessary context for fact checker services."},
+                {"role": "user", "content": extract_claims_prompt},
+            ],
+            model="gpt-3.5-turbo",
+        )
+        chatgpt_reply = chat_completion.choices[0].message.content
+        return chatgpt_reply.split("\n")  # Split into a list of claims
+
 if __name__ == "__main__":
     # Example usage
     agent = FactualConsistencyAgent()
@@ -50,4 +77,11 @@ if __name__ == "__main__":
         "Additionally, the tower was used as a military radio transmission hub during World War I, playing a crucial role in communication. "
         "In recent years, the Eiffel Tower has undergone extensive renovations to improve its structural integrity and sustainability."
     )
-    print(agent.verify_facts(example_article))
+
+    # Extract and print claims
+    claims = agent.extract_claims(example_article)
+    print("Extracted Claims:")
+    for claim in claims:
+        print(f"- {claim}")
+
+    #print(agent.verify_facts(example_article))
