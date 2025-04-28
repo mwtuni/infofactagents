@@ -99,6 +99,39 @@ class FactualConsistencyAgent:
         chatgpt_reply = chat_completion.choices[0].message.content
         return chatgpt_reply.split("\n")  # Split into a list of claims
 
+    def evaluate_claims(self, claims):
+        """
+        Evaluate claims based on LLM knowledge.
+        :param claims: A list of claims to evaluate.
+        :return: A dictionary with claims as keys and their evaluation ('True' or 'False') as values.
+        """
+        evaluation_prompt = (
+            "Evaluate the following claims as 'True' or 'False' based on your knowledge. "
+            "Provide the evaluation in the format: 'Claim: True' or 'Claim: False'. "
+            "For example:\n"
+            "Roses are black: False\n"
+            "The Eiffel Tower is in Paris: True\n\n"
+            + "\n".join(f"- {claim}" for claim in claims)
+        )
+
+        # Use OpenAI to evaluate the claims
+        chat_completion = self.client.chat.completions.create(
+            messages=[
+                {"role": "system", "content": "You are an expert in evaluating factual claims. Provide only 'True' or 'False' evaluations for each claim in the specified format."},
+                {"role": "user", "content": evaluation_prompt},
+            ],
+            model="gpt-3.5-turbo",
+        )
+        chatgpt_reply = chat_completion.choices[0].message.content
+
+        # Parse the response into a dictionary of claim evaluations
+        evaluations = {}
+        for line in chatgpt_reply.split("\n"):
+            if ": " in line:
+                claim, result = line.split(": ", 1)
+                evaluations[claim.strip()] = result.strip()
+        return evaluations
+
 if __name__ == "__main__":
     # Example usage
     agent = FactualConsistencyAgent()
@@ -111,18 +144,26 @@ if __name__ == "__main__":
         "In recent years, the Eiffel Tower has undergone extensive renovations to improve its structural integrity and sustainability."
     )
 
-    # Extract and print claims
+    # Step 1: Extract claims
     claims = agent.extract_claims(example_article)
     print("Extracted Claims:")
     for claim in claims:
         print(f"- {claim}")
 
-    # Check the first claim with Google Fact Check Tools API
-    if claims:
-        print("\nChecking the first claim with Google Fact Check Tools API:")
-        evidence = agent.search_evidence(claims[0])
-        if evidence:
-            for ev in evidence:
-                print(f"- {ev}")
-        else:
-            print("No evidence found.")
+    # Step 2: Evaluate claims
+    evaluations = agent.evaluate_claims(claims)
+    print("\nClaim Evaluations:")
+    for claim, result in evaluations.items():
+        print(f"- {claim}: {result}")
+
+    # Step 3: Verify false claims with Google Fact Check Tools API
+    print("\nVerifying False Claims:")
+    for claim, result in evaluations.items():
+        if result == "False":
+            evidence = agent.search_evidence(claim)
+            print(f"\nEvidence for '{claim}':")
+            if evidence:
+                for ev in evidence:
+                    print(f"- {ev}")
+            else:
+                print("No evidence found.")
