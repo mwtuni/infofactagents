@@ -70,31 +70,6 @@ class FactualConsistencyAgent:
         except Exception as e:
             return [f"Error during evidence search: {str(e)}"]
 
-    # Define function to verify factual consistency
-    def verify_facts(self, article_text):
-        """
-        Verify the factual accuracy of the article.
-        :param article_text: The text of the article to analyze.
-        :return: A string summarizing the factual consistency analysis.
-        """
-        # Prepare the article text as a prompt for the AI
-        fact_check_prompt = (
-            f"Analyze the following article for factual accuracy:\n"
-            f"{article_text}\n"
-            f"Identify any claims that are factually incorrect or unsupported, and provide explanations."
-        )
-
-        # Use OpenAI to verify the facts
-        chat_completion = self.client.chat.completions.create(
-            messages=[
-                {"role": "system", "content": "You are an expert in fact-checking and verifying claims."},
-                {"role": "user", "content": fact_check_prompt},
-            ],
-            model="gpt-3.5-turbo",
-        )
-        chatgpt_reply = chat_completion.choices[0].message.content
-        return chatgpt_reply
-
     # Define function to extract claims from the article
     def extract_claims(self, article_text):
         """
