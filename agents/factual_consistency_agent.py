@@ -1,6 +1,7 @@
 # agents/factual_consistency_agent.py
 import os
 from openai import OpenAI
+from googleapiclient.discovery import build
 
 class FactualConsistencyAgent:
     description = "Verifies the factual accuracy of the article by cross-referencing its claims with external sources."
@@ -13,6 +14,38 @@ class FactualConsistencyAgent:
 
         # Initialize the OpenAI client
         self.client = OpenAI(api_key=api_key)
+
+        # Initialize Google Fact Check Tools API client
+        google_api_key = os.environ.get("GOOGLE_API_KEY")
+        if google_api_key is None:
+            raise ValueError("Google API key not found. Please set the GOOGLE_API_KEY environment variable.")
+        self.google_client = build("factchecktools", "v1alpha1", developerKey=google_api_key)
+
+    def search_evidence(self, claim):
+        """
+        Search for evidence supporting or refuting a claim using Google Fact Check Tools API.
+        :param claim: The claim to search for.
+        :return: A list of evidence summaries.
+        """
+        try:
+            # Call the Google Fact Check Tools API
+            response = self.google_client.claims().search(query=claim).execute()
+
+            # Extract evidence from the response
+            evidence = []
+            if "claims" in response:
+                for item in response["claims"]:
+                    text = item.get("text", "No claim text available")
+                    claimant = item.get("claimant", "Unknown claimant")
+                    review = item.get("claimReview", [])
+                    for rev in review:
+                        publisher = rev.get("publisher", {}).get("name", "Unknown publisher")
+                        title = rev.get("title", "No title available")
+                        url = rev.get("url", "No URL available")
+                        evidence.append(f"{text} - {claimant} ({publisher}): {title} [URL: {url}]")
+            return evidence
+        except Exception as e:
+            return [f"Error during evidence search: {str(e)}"]
 
     # Define function to verify factual consistency
     def verify_facts(self, article_text):
@@ -84,4 +117,12 @@ if __name__ == "__main__":
     for claim in claims:
         print(f"- {claim}")
 
-    #print(agent.verify_facts(example_article))
+    # Check the first claim with Google Fact Check Tools API
+    if claims:
+        print("\nChecking the first claim with Google Fact Check Tools API:")
+        evidence = agent.search_evidence(claims[0])
+        if evidence:
+            for ev in evidence:
+                print(f"- {ev}")
+        else:
+            print("No evidence found.")
