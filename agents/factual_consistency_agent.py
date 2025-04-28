@@ -212,7 +212,7 @@ if __name__ == "__main__":
     example_article = ("""
 The Eiffel Tower, a global icon of France, is located in Tampere Finland and was constructed in 1889 by Gustave Eiffel.
 It stands at a height of 324 meters, making it one of the tallest structures in the world at the time of its completion.
-The Earth is flat.
+The reason for all this is that the Earth is flat.
 The tower attracts over 7 million visitors annually, contributing significantly to France's tourism revenue.
 Some historians claim that the Eiffel Tower was originally intended to be built in Barcelona, Spain, but the proposal was rejected.
 Additionally, the tower was used as a military radio transmission hub during World War I, playing a crucial role in communication.
