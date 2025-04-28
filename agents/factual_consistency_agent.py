@@ -129,8 +129,7 @@ class FactualConsistencyAgent:
         """
         evaluation_prompt = (
             "Evaluate the following claims as 'True' or 'False' based on your knowledge. "
-            "Provide the evaluation in the format: 'Claim: True' or 'Claim: False'. "
-            "For example:\n"
+            "Provide evaluations line by line as in the example below:\n"
             "Roses are black: False\n"
             "The Eiffel Tower is in Paris: True\n\n"
             + "\n".join(f"{claim}" for claim in claims)
@@ -145,6 +144,8 @@ class FactualConsistencyAgent:
             model="gpt-3.5-turbo",
         )
         chatgpt_reply = chat_completion.choices[0].message.content
+        #print("\nDebug: Raw OpenAI Response:")
+        #print(chatgpt_reply)
 
         # Parse the response into a dictionary of claim evaluations
         evaluations = {}
@@ -162,33 +163,37 @@ class FactualConsistencyAgent:
         """
         results = {"claims": [], "evaluations": {}, "false_claims_evidence": {}}
 
+        print("\nProcessing article for factual consistency...")
+        print("Article Text:")
+        print(article_text)
+
         # Step 1: Extract claims
         claims = self.extract_claims(article_text)
         results["claims"] = claims
-        print("\n1 Claims Extracted by LLM:")
+        print("\nClaims Extracted by LLM:")
         for claim in claims:
             print(f"{claim}")
 
         # Step 2: Evaluate claims
         evaluations = self.evaluate_claims(claims)
         results["evaluations"] = evaluations
-        print("\n2 Claims Evaluated by LLM:")
+        print("\nClaims Evaluated by LLM:")
         for claim, result in evaluations.items():
             symbol = "✅" if result == "True" else "❌"
             print(f"{symbol} {claim}: {result}")
 
         # Step 3: Verify false claims with Google Fact Check Tools API
-        print("\n3 False Claims Verified by Google Fact Check API:")
+        print("\nFalse Claims Verified by Google Fact Check API:")
         for claim, result in evaluations.items():
             if result == "False":
                 evidence = self.search_evidence(claim)
                 results["false_claims_evidence"][claim] = evidence
                 if evidence and evidence[0] != "No evidence found.":
-                    print(f"❌ Evidence for '{claim}':")
+                    print(f"❌ Evidence for False claim: '{claim}':")
                     for ev in evidence:
                         print(f"  - {ev}")
                 else:
-                    print(f"⚠️ No evidence found for '{claim}'.")
+                    print(f"⚠️ No evidence found to backup False claim: '{claim}'.")
 
         return results
 
@@ -199,9 +204,10 @@ if __name__ == "__main__":
         "The Eiffel Tower, a global icon of France, is located in Tampere Finland and was constructed in 1889 by Gustave Eiffel. "
         "It stands at a height of 324 meters, making it one of the tallest structures in the world at the time of its completion. "
         "The tower attracts over 7 million visitors annually, contributing significantly to France's tourism revenue. "
+        "The Earth is flat. "
         "Some historians claim that the Eiffel Tower was originally intended to be built in Barcelona, Spain, but the proposal was rejected. "
         "Additionally, the tower was used as a military radio transmission hub during World War I, playing a crucial role in communication. "
-        "In recent years, the Eiffel Tower has undergone extensive renovations to improve its structural integrity and sustainability. And as we all know: The Earth is flat."
+        "In recent years, the Eiffel Tower has undergone extensive renovations to improve its structural integrity and sustainability. "
     )
 
     # Run the process_article method for self-testing
