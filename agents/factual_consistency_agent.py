@@ -21,6 +21,8 @@ class FactualConsistencyAgent:
         if google_api_key is None:
             raise ValueError("Google API key not found. Please set the GOOGLE_API_KEY environment variable.")
         self.google_client = build("factchecktools", "v1alpha1", developerKey=google_api_key)
+
+        # Test Google API
         self.test_google_api()
 
     def test_google_api(self):
@@ -153,6 +155,44 @@ class FactualConsistencyAgent:
                 evaluations[claim.strip()] = result.strip()
         return evaluations
 
+    def process_article(self, article_text):
+        """
+        Process the article by extracting claims, evaluating them, and verifying false claims.
+        :param article_text: The text of the article to process.
+        :return: A dictionary containing the results of the analysis.
+        """
+        results = {"claims": [], "evaluations": {}, "false_claims_evidence": {}}
+
+        # Step 1: Extract claims
+        claims = self.extract_claims(article_text)
+        results["claims"] = claims
+        print("\n1 Claims extracted by LLM:")
+        for claim in claims:
+            print(f"{claim}")
+
+        # Step 2: Evaluate claims
+        evaluations = self.evaluate_claims(claims)
+        results["evaluations"] = evaluations
+        print("\n2 Claims Evaluated by LLM:")
+        for claim, result in evaluations.items():
+            symbol = "✅" if result == "True" else "❌"
+            print(f"{symbol} {claim}: {result}")
+
+        # Step 3: Verify false claims with Google Fact Check Tools API
+        print("\n3 False Claims Verified by Google Fact Check API:")
+        for claim, result in evaluations.items():
+            if result == "False":
+                evidence = self.search_evidence(claim)
+                results["false_claims_evidence"][claim] = evidence
+                print(f"\nEvidence for '{claim}':")
+                if evidence:
+                    for ev in evidence:
+                        print(f"- {ev}")
+                else:
+                    print("No evidence found.")
+
+        return results
+
 if __name__ == "__main__":
     # Example usage
     agent = FactualConsistencyAgent()
@@ -165,27 +205,5 @@ if __name__ == "__main__":
         "In recent years, the Eiffel Tower has undergone extensive renovations to improve its structural integrity and sustainability. Earth is triangular."
     )
 
-    # Step 1: Extract claims
-    claims = agent.extract_claims(example_article)
-    print("\n1 Claims extracted by LLM:")
-    for claim in claims:
-        print(f"{claim}")
-
-    # Step 2: Evaluate claims
-    evaluations = agent.evaluate_claims(claims)
-    print("\n2 Claims Evaluated by LLM:")
-    for claim, result in evaluations.items():
-        symbol = "✅" if result == "True" else "❌"
-        print(f"{symbol} {claim}: {result}")
-
-    # Step 3: Verify false claims with Google Fact Check Tools API
-    print("\n3 False Claims Verified by Google Fact Check API:")
-    for claim, result in evaluations.items():
-        if result == "False":
-            evidence = agent.search_evidence(claim)
-            print(f"\nEvidence for '{claim}':")
-            if evidence:
-                for ev in evidence:
-                    print(f"- {ev}")
-            else:
-                print("No evidence found.")
+    # Run the process_article method for self-testing
+    agent.process_article(example_article)
