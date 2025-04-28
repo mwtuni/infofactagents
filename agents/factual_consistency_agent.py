@@ -65,8 +65,16 @@ class FactualConsistencyAgent:
                         publisher = rev.get("publisher", {}).get("name", "Unknown publisher")
                         title = rev.get("title", "No title available")
                         url = rev.get("url", "No URL available")
-                        evidence.append(f"{text} - {claimant} ({publisher}): {title} [URL: {url}]")
-            return evidence
+                        textual_rating = rev.get("textualRating", "No rating available")
+                        evidence.append(
+                            f"Claim: {text}\n"
+                            f"  - Claimant: {claimant}\n"
+                            f"  - Publisher: {publisher}\n"
+                            f"  - Title: {title}\n"
+                            f"  - URL: {url}\n"
+                            f"  - Rating: {textual_rating}"
+                        )
+            return evidence if evidence else ["No evidence found."]
         except Exception as e:
             return [f"Error during evidence search: {str(e)}"]
 
@@ -81,15 +89,31 @@ class FactualConsistencyAgent:
         extract_claims_prompt = (
             f"Carefully read the following article and extract all factual claims explicitly mentioned in it:\n\n"
             f"{article_text}\n\n"
-            f"List each claim as a separate line of text without formatting. Ensure the claims are directly based on the text and avoid adding inferred or assumed information. "
+            f"Write each claim on a new line as plain text, without adding any numbers, bullets, or other formatting. "
+            f"Ensure the claims are directly based on the text and avoid adding inferred or assumed information. "
             f"Make sure each claim is self-contained and includes all necessary context to be understood independently. "
             f"Do not attempt to fix any factual errors or inconsistencies in the text."
+        )
+
+        # Example output added to the system prompt
+        system_prompt = (
+            "You are an expert in analyzing text and extracting factual claims. Your task is to extract claims exactly as they appear in the text without making corrections or assumptions. "
+            "Ensure each claim is self-contained and includes all necessary context for fact-checker services. "
+            "Write each claim on a new line as plain text, without adding any numbers, bullets, or other formatting. "
+            "For example:\n\n"
+            "Input:\n"
+            "The Eiffel Tower, a global icon of France, is located in Tampere Finland and was constructed in 1889 by Gustave Eiffel. "
+            "It stands at a height of 324 meters.\n\n"
+            "Output:\n"
+            "The Eiffel Tower is located in Tampere, Finland.\n"
+            "The Eiffel Tower was constructed in 1889 by Gustave Eiffel.\n"
+            "The Eiffel Tower stands at a height of 324 meters."
         )
 
         # Use OpenAI to extract claims
         chat_completion = self.client.chat.completions.create(
             messages=[
-                {"role": "system", "content": "You are an expert in analyzing text and extracting factual claims. Your task is to extract claims exactly as they appear in the text without making corrections or assumptions. Ensure each claim is self-contained and includes all necessary context for fact checker services."},
+                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": extract_claims_prompt},
             ],
             model="gpt-3.5-turbo",
@@ -109,7 +133,7 @@ class FactualConsistencyAgent:
             "For example:\n"
             "Roses are black: False\n"
             "The Eiffel Tower is in Paris: True\n\n"
-            + "\n".join(f"- {claim}" for claim in claims)
+            + "\n".join(f"{claim}" for claim in claims)
         )
 
         # Use OpenAI to evaluate the claims
@@ -141,7 +165,7 @@ class FactualConsistencyAgent:
         # Step 1: Extract claims
         claims = self.extract_claims(article_text)
         results["claims"] = claims
-        print("\n1 Claims extracted by LLM:")
+        print("\n1 Claims Extracted by LLM:")
         for claim in claims:
             print(f"{claim}")
 
@@ -159,12 +183,12 @@ class FactualConsistencyAgent:
             if result == "False":
                 evidence = self.search_evidence(claim)
                 results["false_claims_evidence"][claim] = evidence
-                print(f"\nEvidence for '{claim}':")
-                if evidence:
+                if evidence and evidence[0] != "No evidence found.":
+                    print(f"❌ Evidence for '{claim}':")
                     for ev in evidence:
-                        print(f"- {ev}")
+                        print(f"  - {ev}")
                 else:
-                    print("No evidence found.")
+                    print(f"⚠️ No evidence found for '{claim}'.")
 
         return results
 
@@ -177,7 +201,7 @@ if __name__ == "__main__":
         "The tower attracts over 7 million visitors annually, contributing significantly to France's tourism revenue. "
         "Some historians claim that the Eiffel Tower was originally intended to be built in Barcelona, Spain, but the proposal was rejected. "
         "Additionally, the tower was used as a military radio transmission hub during World War I, playing a crucial role in communication. "
-        "In recent years, the Eiffel Tower has undergone extensive renovations to improve its structural integrity and sustainability. Earth is triangular."
+        "In recent years, the Eiffel Tower has undergone extensive renovations to improve its structural integrity and sustainability. And as we all know: The Earth is flat."
     )
 
     # Run the process_article method for self-testing
