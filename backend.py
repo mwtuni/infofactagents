@@ -69,7 +69,7 @@ Always ensure the analysis is comprehensive and includes metadata evaluation, fa
 
 SYSTEM_PROMPT = generate_system_prompt()
 
-@app.route("/infogenai", methods=["POST"])
+@app.route("/infofactagents", methods=["POST"])
 def process_prompt():
     incoming_msg = request.form.get('Body', '').strip()
     response_text = ""
