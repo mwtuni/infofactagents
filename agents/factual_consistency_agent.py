@@ -98,7 +98,7 @@ class FactualConsistencyAgent:
         # Example output added to the system prompt
         system_prompt = (
             "You are an expert in analyzing text and extracting factual claims. Your task is to extract claims exactly as they appear in the text without making corrections or assumptions. "
-            "Ensure each claim is self-contained and includes all necessary context for fact-checker services. "
+            "Ensure each claim is self-contained and includes all necessary context for fact-checker services . "
             "Write each claim on a new line as plain text, without adding any numbers, bullets, or other formatting. "
             "For example:\n\n"
             "Input:\n"
@@ -116,7 +116,7 @@ class FactualConsistencyAgent:
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": extract_claims_prompt},
             ],
-            model="gpt-3.5-turbo",
+            model="gpt-4",
         )
         chatgpt_reply = chat_completion.choices[0].message.content
         return chatgpt_reply.split("\n")  # Split into a list of claims
@@ -163,6 +163,10 @@ class FactualConsistencyAgent:
         """
         results = {"claims": [], "evaluations": {}, "false_claims_evidence": {}}
 
+        base_score = 100  # Start with a perfect score
+        penalty_per_false_claim = 10
+        additional_penalty_with_evidence = 5
+
         print("\nProcessing article for factual consistency...")
         print("Article Text:")
         print(article_text)
@@ -186,29 +190,34 @@ class FactualConsistencyAgent:
         print("\nFalse Claims Verified by Google Fact Check API:")
         for claim, result in evaluations.items():
             if result == "False":
+                base_score -= penalty_per_false_claim
                 evidence = self.search_evidence(claim)
                 results["false_claims_evidence"][claim] = evidence
                 if evidence and evidence[0] != "No evidence found.":
+                    base_score -= additional_penalty_with_evidence
                     print(f"❌ Evidence for False claim: '{claim}':")
                     for ev in evidence:
                         print(f"  - {ev}")
                 else:
                     print(f"⚠️ No evidence found to backup False claim: '{claim}'.")
 
-        return results
+        # Ensure the score is not negative
+        final_score = max(base_score, 0)
+        print(f"\nFinal Trustworthiness Score: {final_score}")
+        return final_score
 
 if __name__ == "__main__":
     # Example usage
     agent = FactualConsistencyAgent()
-    example_article = (
-        "The Eiffel Tower, a global icon of France, is located in Tampere Finland and was constructed in 1889 by Gustave Eiffel. "
-        "It stands at a height of 324 meters, making it one of the tallest structures in the world at the time of its completion. "
-        "The tower attracts over 7 million visitors annually, contributing significantly to France's tourism revenue. "
-        "The Earth is flat. "
-        "Some historians claim that the Eiffel Tower was originally intended to be built in Barcelona, Spain, but the proposal was rejected. "
-        "Additionally, the tower was used as a military radio transmission hub during World War I, playing a crucial role in communication. "
-        "In recent years, the Eiffel Tower has undergone extensive renovations to improve its structural integrity and sustainability. "
-    )
+    example_article = ("""
+The Eiffel Tower, a global icon of France, is located in Tampere Finland and was constructed in 1889 by Gustave Eiffel.
+It stands at a height of 324 meters, making it one of the tallest structures in the world at the time of its completion.
+The Earth is flat.
+The tower attracts over 7 million visitors annually, contributing significantly to France's tourism revenue.
+Some historians claim that the Eiffel Tower was originally intended to be built in Barcelona, Spain, but the proposal was rejected.
+Additionally, the tower was used as a military radio transmission hub during World War I, playing a crucial role in communication.
+In recent years, the Eiffel Tower has undergone extensive renovations to improve its structural integrity and sustainability.
+""")
 
     # Run the process_article method for self-testing
     agent.process_article(example_article)
