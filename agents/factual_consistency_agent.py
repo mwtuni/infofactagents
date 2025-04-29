@@ -8,6 +8,8 @@ class FactualConsistencyAgent:
 
     def __init__(self):
 
+        self.output_log = []  # Accumulate output for Gradio interface
+
         # Ensure the OPENAI API key is set
         api_key = os.environ.get("OPENAI_API_KEY")
         if api_key is None:
@@ -24,6 +26,14 @@ class FactualConsistencyAgent:
 
         # Test Google API
         self.test_google_api()
+
+    def log_and_accumulate(self, message):
+        """
+        Print the message to the console and accumulate it in the output log.
+        :param message: The message to log.
+        """
+        print(message)  # Print to backend console
+        self.output_log.append(message)  # Accumulate for Gradio
 
     def test_google_api(self):
         # Test Google API with a known false claim
@@ -159,52 +169,50 @@ class FactualConsistencyAgent:
         """
         Process the article by extracting claims, evaluating them, and verifying false claims.
         :param article_text: The text of the article to process.
-        :return: A dictionary containing the results of the analysis.
+        :return: A formatted text block containing the results of the analysis.
         """
-        results = {"claims": [], "evaluations": {}, "false_claims_evidence": {}}
+        self.output_log = []  # Reset the log for each new article
 
         base_score = 100  # Start with a perfect score
         penalty_per_false_claim = 10
         additional_penalty_with_evidence = 5
 
-        print("\nProcessing article for factual consistency...")
-        print("Article Text:")
-        print(article_text)
+        self.log_and_accumulate("Processing article for factual consistency...\n")
+        self.log_and_accumulate(f"Article Text:\n{article_text}\n")
 
         # Step 1: Extract claims
         claims = self.extract_claims(article_text)
-        results["claims"] = claims
-        print("\nClaims Extracted by LLM:")
+        self.log_and_accumulate("\nClaims Extracted by LLM:")
         for claim in claims:
-            print(f"{claim}")
+            self.log_and_accumulate(f"- {claim}")
 
         # Step 2: Evaluate claims
         evaluations = self.evaluate_claims(claims)
-        results["evaluations"] = evaluations
-        print("\nClaims Evaluated by LLM:")
+        self.log_and_accumulate("\n\nClaims Evaluated by LLM:")
         for claim, result in evaluations.items():
             symbol = "✅" if result == "True" else "❌"
-            print(f"{symbol} {claim}: {result}")
+            self.log_and_accumulate(f"{symbol} {claim}: {result}")
 
         # Step 3: Verify false claims with Google Fact Check Tools API
-        print("\nFalse Claims Verified by Google Fact Check API:")
+        self.log_and_accumulate("\n\nFalse Claims Verified by Google Fact Check API:")
         for claim, result in evaluations.items():
             if result == "False":
                 base_score -= penalty_per_false_claim
                 evidence = self.search_evidence(claim)
-                results["false_claims_evidence"][claim] = evidence
                 if evidence and evidence[0] != "No evidence found.":
                     base_score -= additional_penalty_with_evidence
-                    print(f"❌ Evidence for False claim: '{claim}':")
+                    self.log_and_accumulate(f"❌ Evidence for False claim: '{claim}':")
                     for ev in evidence:
-                        print(f"  - {ev}")
+                        self.log_and_accumulate(f"  - {ev}")
                 else:
-                    print(f"⚠️ No evidence found to backup False claim: '{claim}'.")
+                    self.log_and_accumulate(f"⚠️ No evidence found to backup False claim: '{claim}'.")
 
         # Ensure the score is not negative
         final_score = max(base_score, 0)
-        print(f"\nFinal Trustworthiness Score: {final_score}")
-        return final_score
+        self.log_and_accumulate(f"\n\nFinal Trustworthiness Score: {final_score}")
+
+        # Return the accumulated log as a single text block
+        return "\n".join(self.output_log)
 
 if __name__ == "__main__":
     # Example usage

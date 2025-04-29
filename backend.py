@@ -85,15 +85,15 @@ def process_prompt():
     else:
         try:
             # Process the article with all agents
-            rag_data = {}
+            formatted_output = []
             for agent_name, agent_data in manager.agents.items():
                 agent = agent_data["instance"]
                 if hasattr(agent, "process_article"):
-                    rag_data[agent_name] = agent.process_article(incoming_msg)
+                    result = agent.process_article(incoming_msg)
+                    formatted_output.append(f"### {agent_name}\n\n{result}\n")
 
-            # Combine RAG data and analyze
-            combined_rag_data = json.dumps(rag_data)
-            response_text = f"Combined RAG Data:\n{combined_rag_data}\n\nAnalysis:\nTrustworthiness analysis will be implemented here."
+            # Combine formatted output
+            response_text = "\n".join(formatted_output)
         except Exception as e:
             response_text = f"Error processing your prompt: {str(e)}"
 
