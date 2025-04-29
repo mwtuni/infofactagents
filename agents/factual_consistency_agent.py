@@ -5,6 +5,7 @@ from googleapiclient.discovery import build
 
 class FactualConsistencyAgent:
     description = "Verifies the factual accuracy of the article by cross-referencing its claims with external sources."
+    OPENAI_MODEL = "gpt-4o"  # Define a constant for the OpenAI model to be used
 
     def __init__(self):
 
@@ -126,7 +127,7 @@ class FactualConsistencyAgent:
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": extract_claims_prompt},
             ],
-            model="gpt-4",
+            model=self.OPENAI_MODEL,
         )
         chatgpt_reply = chat_completion.choices[0].message.content
         return chatgpt_reply.split("\n")  # Split into a list of claims
@@ -151,7 +152,7 @@ class FactualConsistencyAgent:
                 {"role": "system", "content": "You are an expert in evaluating factual claims. Provide only 'True' or 'False' evaluations for each claim in the specified format."},
                 {"role": "user", "content": evaluation_prompt},
             ],
-            model="gpt-3.5-turbo",
+            model=self.OPENAI_MODEL,
         )
         chatgpt_reply = chat_completion.choices[0].message.content
         #print("\nDebug: Raw OpenAI Response:")
