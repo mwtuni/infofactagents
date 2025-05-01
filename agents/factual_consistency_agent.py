@@ -183,7 +183,6 @@ class FactualConsistencyAgent:
         additional_penalty_with_evidence = 5
 
         self.log_and_accumulate("Processing article for factual consistency...\n")
-        self.log_and_accumulate(f"Article Text:\n{article_text}\n")
 
         # Step 1: Extract claims
         claims = self.extract_claims(article_text)

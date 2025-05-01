@@ -91,6 +91,8 @@ def process_prompt():
 
             # Process the article with selected agents
             formatted_output = []
+            formatted_output.append(f"### Article\n\n{incoming_msg}\n")
+
             for agent_name in selected_agents:
                 agent_data = manager.agents.get(agent_name)
                 if agent_data and hasattr(agent_data["instance"], "process_article"):

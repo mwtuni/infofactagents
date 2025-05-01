@@ -14,7 +14,7 @@ class SentimentAnalysisAgent:
         # Initialize the OpenAI client
         self.client = OpenAI(api_key=api_key)
 
-    def analyze_sentiment(self, article_text):
+    def process_article(self, article_text):
         """
         Analyze the sentiment of the article and provide brief, actionable metrics.
         :param article_text: The text of the article to analyze.
