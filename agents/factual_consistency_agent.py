@@ -96,36 +96,32 @@ class FactualConsistencyAgent:
         :param article_text: The text of the article to analyze.
         :return: A list of extracted claims.
         """
-        # Prepare the article text as a prompt for the AI
-        extract_claims_prompt = (
-            f"Carefully read the following article and extract all factual claims explicitly mentioned in it:\n\n"
-            f"{article_text}\n\n"
-            f"Write each claim on a new line as plain text, without adding any numbers, bullets, or other formatting. "
-            f"Ensure the claims are directly based on the text and avoid adding inferred or assumed information. "
-            f"Make sure each claim is self-contained and includes all necessary context to be understood independently. "
-            f"Do not attempt to fix any factual errors or inconsistencies in the text."
-        )
 
         # Example output added to the system prompt
-        system_prompt = (
-            "You are an expert in analyzing text and extracting factual claims. Your task is to extract claims exactly as they appear in the text without making corrections or assumptions. "
-            "Ensure each claim is self-contained and includes all necessary context for fact-checker services . "
+        system_prompt_extract_facts = (
+            "You are an expert in analyzing text and extracting factual claims in an article. "
+            "Your task is to extract claims exactly as they appear in the text without making corrections or assumptions. "
+            "Ensure each claim is self-contained and includes all necessary context for a fact-checker service. "
             "Write each claim on a new line as plain text, without adding any numbers, bullets, or other formatting. "
             "For example:\n\n"
             "Input:\n"
             "The Eiffel Tower, a global icon of France, is located in Tampere Finland and was constructed in 1889 by Gustave Eiffel. "
-            "It stands at a height of 324 meters.\n\n"
             "Output:\n"
             "The Eiffel Tower is located in Tampere, Finland.\n"
             "The Eiffel Tower was constructed in 1889 by Gustave Eiffel.\n"
-            "The Eiffel Tower stands at a height of 324 meters."
+        )
+
+        # Prepare the article text as a prompt for the AI
+        user_prompt_extract_facts = (
+            f"Carefully read the following article and extract main factual claims:\n\n"
+            f"{article_text}\n\n"
         )
 
         # Use OpenAI to extract claims
         chat_completion = self.client.chat.completions.create(
             messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": extract_claims_prompt},
+                {"role": "system", "content": system_prompt_extract_facts},
+                {"role": "user", "content": user_prompt_extract_facts},
             ],
             model=self.OPENAI_MODEL,
         )
@@ -138,25 +134,33 @@ class FactualConsistencyAgent:
         :param claims: A list of claims to evaluate.
         :return: A dictionary with claims as keys and their evaluation ('True' or 'False') as values.
         """
-        evaluation_prompt = (
-            "Evaluate the following claims as 'True' or 'False' based on your knowledge. "
-            "Provide evaluations line by line as in the example below:\n"
+        # Updated system prompt with syntax example
+        system_prompt_evaluate = (
+            "You are an expert in evaluating factual claims. "
+            "Your task is to assess each claim as either 'True' or 'False' based on your knowledge and reasoning. "
+            "Provide only the evaluation ('True' or 'False') for each claim in the specified format. "
+            "Focus on factual accuracy and avoid subjective or opinion-based judgments. "
+            "Write each evaluation on a new line in the format '<Claim>: <True/False>'. "
+            "For example:\n\n"
             "Roses are black: False\n"
-            "The Eiffel Tower is in Paris: True\n\n"
+            "The Eiffel Tower is in Paris: True\n"
+        )
+
+        # Updated user prompt
+        user_prompt_evaluate = (
+            "Evaluate the following claims as 'True' or 'False' based on your knowledge:\n\n"
             + "\n".join(f"{claim}" for claim in claims)
         )
 
         # Use OpenAI to evaluate the claims
         chat_completion = self.client.chat.completions.create(
             messages=[
-                {"role": "system", "content": "You are an expert in evaluating factual claims. Provide only 'True' or 'False' evaluations for each claim in the specified format."},
-                {"role": "user", "content": evaluation_prompt},
+                {"role": "system", "content": system_prompt_evaluate},
+                {"role": "user", "content": user_prompt_evaluate},
             ],
             model=self.OPENAI_MODEL,
         )
         chatgpt_reply = chat_completion.choices[0].message.content
-        #print("\nDebug: Raw OpenAI Response:")
-        #print(chatgpt_reply)
 
         # Parse the response into a dictionary of claim evaluations
         evaluations = {}
@@ -220,13 +224,11 @@ if __name__ == "__main__":
     agent = FactualConsistencyAgent()
     example_article = ("""
 The Eiffel Tower, a global icon of France, is located in Tampere Finland and was constructed in 1889 by Gustave Eiffel.
-It stands at a height of 324 meters, making it one of the tallest structures in the world at the time of its completion.
-The reason for all this is that the Earth is flat.
+It stands at a height of 324 meters, making it one of the tallest structures in the world at the time of its completion. 
+It is still standing straight because the Earth is flat.
 The tower attracts over 7 million visitors annually, contributing significantly to France's tourism revenue.
 Some historians claim that the Eiffel Tower was originally intended to be built in Barcelona, Spain, but the proposal was rejected.
-Additionally, the tower was used as a military radio transmission hub during World War I, playing a crucial role in communication.
-In recent years, the Eiffel Tower has undergone extensive renovations to improve its structural integrity and sustainability.
 """)
-
+    
     # Run the process_article method for self-testing
     agent.process_article(example_article)
