@@ -223,11 +223,14 @@ if __name__ == "__main__":
     # Example usage
     agent = FactualConsistencyAgent()
     example_article = ("""
-The Eiffel Tower, a global icon of France, is located in Tampere Finland and was constructed in 1889 by Gustave Eiffel.
-It stands at a height of 324 meters, making it one of the tallest structures in the world at the time of its completion. 
-It is still standing straight because the Earth is flat.
-The tower attracts over 7 million visitors annually, contributing significantly to France's tourism revenue.
-Some historians claim that the Eiffel Tower was originally intended to be built in Barcelona, Spain, but the proposal was rejected.
+We are truly confused by the latest contradictory revelations on Fox News:  
+- The Earth is round.  
+- The Earth is triangular.  
+- The Earth is flat.  
+
+To make matters worse, even the most trusted fact-checking services are providing conflicting evaluations of these claims. 
+This has left viewers and experts alike puzzled, as they struggle to determine which, if any, of these statements can be considered accurate. 
+Social media platforms are now flooded with debates and memes, amplifying the confusion surrounding these revelations.                         
 """)
     
     # Run the process_article method for self-testing
