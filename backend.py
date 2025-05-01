@@ -72,6 +72,7 @@ SYSTEM_PROMPT = generate_system_prompt()
 @app.route("/infofactagents", methods=["POST"])
 def process_prompt():
     incoming_msg = request.form.get('Body', '').strip()
+    selected_agents = request.form.get('Agents', '').split(',')  # Get selected agents from the request
     response_text = ""
 
     if incoming_msg == "list_agents":
@@ -84,12 +85,16 @@ def process_prompt():
 
     else:
         try:
-            # Process the article with all agents
+            # Check if no agents were selected
+            if not selected_agents or selected_agents == ['']:
+                return "Error: No agents selected. Please select at least one agent.", 400
+
+            # Process the article with selected agents
             formatted_output = []
-            for agent_name, agent_data in manager.agents.items():
-                agent = agent_data["instance"]
-                if hasattr(agent, "process_article"):
-                    result = agent.process_article(incoming_msg)
+            for agent_name in selected_agents:
+                agent_data = manager.agents.get(agent_name)
+                if agent_data and hasattr(agent_data["instance"], "process_article"):
+                    result = agent_data["instance"].process_article(incoming_msg)
                     formatted_output.append(f"### {agent_name}\n\n{result}\n")
 
             # Combine formatted output
