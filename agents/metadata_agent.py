@@ -30,16 +30,41 @@ class MetadataAgent:
 
         return urls, persons
 
+    def add_icons_to_analysis(self, analysis_text):
+        """
+        Add icons to the analysis text based on reliability, bias, and trustworthiness.
+        :param analysis_text: The raw analysis text from OpenAI.
+        :return: The analysis text with icons added.
+        """
+        lines = analysis_text.split("\n")
+        updated_lines = []
+        for line in lines:
+            if "Reliability: High" in line:
+                updated_lines.append(f"✅ {line}")
+            elif "Reliability: Medium" in line:
+                updated_lines.append(f"⚠️ {line}")
+            elif "Reliability: Low" in line:
+                updated_lines.append(f"❌ {line}")
+            elif "Bias: Neutral" in line:
+                updated_lines.append(f"✅ {line}")
+            elif "Bias: Slightly" in line:
+                updated_lines.append(f"⚠️ {line}")
+            elif "Bias: Strongly" in line:
+                updated_lines.append(f"❌ {line}")
+            elif "Trustworthiness:" in line:
+                updated_lines.append(f"🔍 {line}")
+            else:
+                updated_lines.append(line)
+        return "\n".join(updated_lines)
+
     def process_article(self, article_text):
         """
         Analyze the credibility of URLs and persons mentioned within the article.
         :param article_text: The text of the article to analyze.
-        :return: A dictionary summarizing the credibility analysis.
+        :return: A formatted string summarizing the metadata analysis.
         """
         # Extract URLs and persons from the article
         urls, persons = self.extract_urls_and_persons(article_text)
-        print("Extracted URLs:", urls)  # Debugging
-        print("Extracted Persons:", persons)  # Debugging
 
         # Prepare the system prompt with an example output format
         system_prompt = (
@@ -48,19 +73,19 @@ class MetadataAgent:
             "For each entity, provide a brief analysis of its reliability, potential bias, and trustworthiness. "
             "Follow the format below:\n\n"
             "URLs:\n"
-            "https://example.com/news: Reliability: High. Bias: Neutral. Trustworthiness: Reliable source for news.\n"
-            "https://another-example.org/research: Reliability: Medium. Bias: Slightly academic. Trustworthiness: Credible for research purposes.\n\n"
+            "- <URL 1>: Reliability: <High/Medium/Low>. Bias: <Neutral/Biased>. Trustworthiness: <Description>.\n"
+            "- <URL 2>: Reliability: <High/Medium/Low>. Bias: <Neutral/Biased>. Trustworthiness: <Description>.\n\n"
             "Persons:\n"
-            "John Doe: Reliability: High. Bias: Neutral. Trustworthiness: Well-regarded expert in the field.\n"
-            "Jane Smith: Reliability: Medium. Bias: Slightly political. Trustworthiness: Known for defending controversial policies.\n"
+            "- <Person 1>: Reliability: <High/Medium/Low>. Bias: <Neutral/Biased>. Trustworthiness: <Description>.\n"
+            "- <Person 2>: Reliability: <High/Medium/Low>. Bias: <Neutral/Biased>. Trustworthiness: <Description>.\n"
         )
 
         # Prepare the user prompt with the extracted URLs and persons
         metadata_prompt = (
-            "Evaluate the credibility of the following entities mentioned in the article:\n\n"
-            "URLs:\n" + ("\n".join(urls) if urls else "None") + "\n\n"
-            "Persons:\n" + ("\n".join(persons) if persons else "None") + "\n\n"
-            "Provide your evaluation in the specified format."
+            f"Evaluate the credibility of the following entities mentioned in the article:\n\n"
+            f"URLs:\n" + ("\n".join(urls) if urls else "None") + "\n\n"
+            f"Persons:\n" + ("\n".join(persons) if persons else "None") + "\n\n"
+            f"Provide your evaluation in the specified format."
         )
 
         # Use OpenAI to analyze the metadata
@@ -72,24 +97,12 @@ class MetadataAgent:
             model="gpt-3.5-turbo",
         )
         chatgpt_reply = chat_completion.choices[0].message.content
-        print("Raw OpenAI Response:", chatgpt_reply)  # Debugging
 
-        # Parse the response into a structured format
-        response_lines = chatgpt_reply.split("\n")
-        print("Response Lines:", response_lines)  # Debugging
-        analysis = {"URLs": {}, "Persons": {}}
-        current_section = None
+        # Add icons to the analysis
+        analysis_with_icons = self.add_icons_to_analysis(chatgpt_reply)
 
-        for line in response_lines:
-            if line.startswith("URLs:"):
-                current_section = "URLs"
-            elif line.startswith("Persons:"):
-                current_section = "Persons"
-            elif ": " in line and current_section:
-                entity, evaluation = line.split(": ", 1)
-                analysis[current_section][entity.strip()] = evaluation.strip()
-
-        return analysis
+        # Return the formatted response
+        return f"### Metadata Analysis\n\n{analysis_with_icons}"
 
 if __name__ == "__main__":
     # Example usage
@@ -105,9 +118,6 @@ if __name__ == "__main__":
         "to address the scale of the problem. Meanwhile, advocacy groups like Greenpeace (https://www.greenpeace.org) "
         "continue to push for more aggressive policies to combat climate change."
     )
-    result = agent.analyze_metadata(example_article)
-    print("Metadata Analysis Summary:")
-    for section, entities in result.items():
-        print(f"{section}:")
-        for entity, evaluation in entities.items():
-            print(f"  {entity}: {evaluation}")
+    print(f"### Article\n\n{example_article}\n")    
+    result = agent.process_article(example_article)
+    print(result)

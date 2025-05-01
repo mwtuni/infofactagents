@@ -14,22 +14,53 @@ class SentimentAnalysisAgent:
         # Initialize the OpenAI client
         self.client = OpenAI(api_key=api_key)
 
+    def add_icons_to_analysis(self, analysis_text):
+        """
+        Add icons to the analysis text based on sentiment and bias scores.
+        :param analysis_text: The raw analysis text from OpenAI.
+        :return: The analysis text with icons added.
+        """
+        lines = analysis_text.split("\n")
+        updated_lines = []
+        for line in lines:
+            if "Overall Tone: Positive" in line:
+                updated_lines.append(f"✅ {line}")
+            elif "Overall Tone: Neutral" in line:
+                updated_lines.append(f"🔍 {line}")
+            elif "Overall Tone: Negative" in line:
+                updated_lines.append(f"❌ {line}")
+            elif "Sentiment Bias Score:" in line:
+                score = int(line.split(":")[1].strip())
+                if score < 30:
+                    updated_lines.append(f"✅ {line}")
+                elif 30 <= score < 70:
+                    updated_lines.append(f"⚠️ {line}")
+                else:
+                    updated_lines.append(f"❌ {line}")
+            elif "Impact:" in line:
+                updated_lines.append(f"🔍 {line}")
+            else:
+                updated_lines.append(line)
+        return "\n".join(updated_lines)
+
     def process_article(self, article_text):
         """
-        Analyze the sentiment of the article and provide brief, actionable metrics.
+        Analyze the sentiment of the article and provide a structured output.
         :param article_text: The text of the article to analyze.
-        :return: A dictionary summarizing the sentiment analysis.
+        :return: A formatted string summarizing the sentiment analysis.
         """
         # Updated system prompt
         system_prompt_sentiment = (
             "You are an expert in sentiment analysis. "
-            "Your task is to evaluate the tone of the provided article and provide a brief summary. "
+            "Your task is to evaluate the tone of the provided article and provide a structured summary. "
             "Focus on identifying the overall sentiment (positive, negative, or neutral), sentiment bias, and emotional tone. "
             "Provide the output in the following format:\n\n"
             "Overall Tone: <Positive/Negative/Neutral>\n"
             "Sentiment Bias Score: <0-100>\n"
-            "Key Highlights: <List of emotionally charged phrases or sections>\n"
-            "Impact: <Brief description of how the sentiment might influence readers>"
+            "Key Highlights:\n"
+            "- <Highlight 1>\n"
+            "- <Highlight 2>\n"
+            "Impact: <Brief description of how the sentiment might influence readers>\n"
         )
 
         # Updated user prompt
@@ -49,29 +80,11 @@ class SentimentAnalysisAgent:
         )
         chatgpt_reply = chat_completion.choices[0].message.content
 
-        # Parse the response into a structured format with error handling
-        response_lines = chatgpt_reply.split("\n")
-        result = {
-            "Overall Tone": self._extract_value(response_lines, 0, "Overall Tone"),
-            "Sentiment Bias Score": self._extract_value(response_lines, 1, "Sentiment Bias Score"),
-            "Key Highlights": self._extract_value(response_lines, 2, "Key Highlights"),
-            "Impact": self._extract_value(response_lines, 3, "Impact"),
-        }
-        return result
+        # Add icons to the analysis
+        analysis_with_icons = self.add_icons_to_analysis(chatgpt_reply)
 
-    def _extract_value(self, response_lines, index, key):
-        """
-        Safely extract a value from the response lines.
-        :param response_lines: List of response lines.
-        :param index: Index of the line to extract.
-        :param key: Expected key for the line.
-        :return: Extracted value or a default message if the line is missing or malformed.
-        """
-        if index < len(response_lines):
-            parts = response_lines[index].split(": ", 1)
-            if len(parts) == 2 and parts[0].strip() == key:
-                return parts[1].strip()
-        return "Unknown"
+        # Return the formatted response
+        return f"### Sentiment Analysis\n\n{analysis_with_icons}"
 
 if __name__ == "__main__":
     # Example usage
@@ -82,10 +95,9 @@ if __name__ == "__main__":
         "Democrats have repeatedly failed to address rising inflation, leaving families struggling to make ends meet. "
         "Their obsession with raising taxes is driving businesses out of the country, killing jobs, and stifling innovation. "
         "Meanwhile, their open-border policies have created chaos, allowing criminals and drugs to pour into our communities. "
-        "It’s clear that the Democratic Party is more focused on pandering to radical activists than solving real problems. "
+        "It's clear that the Democratic Party is more focused on pandering to radical activists than solving real problems. "
         "America deserves better than the failed leadership and dangerous ideas of the Democrats."
     )
-    result = agent.analyze_sentiment(example_article)
-    print("Sentiment Analysis Summary:")
-    for key, value in result.items():
-        print(f"{key}: {value}")
+    print(f"### Article\n\n{example_article}\n")
+    result = agent.process_article(example_article)
+    print(result)
