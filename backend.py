@@ -123,5 +123,14 @@ def process_prompt():
 
         return {"SessionID": session_id, "Response": response_text}, 200
 
+import requests
 if __name__ == "__main__":
+    try:
+        # Fetch and display the public IP address
+        public_ip = requests.get("https://api.ipify.org").text
+        print(f"Backend is accessible at public IP address: {public_ip}")
+    except requests.RequestException as e:
+        print(f"Failed to fetch public IP address: {e}")
+
+    # Start the Flask application
     app.run(host="0.0.0.0", port=5000)
