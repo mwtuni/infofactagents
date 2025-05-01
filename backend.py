@@ -3,6 +3,10 @@ import os
 import importlib
 import inspect
 import json
+import uuid  # For generating unique session IDs
+
+# In-memory session store
+sessions = {}
 
 app = Flask(__name__)
 
@@ -71,23 +75,32 @@ SYSTEM_PROMPT = generate_system_prompt()
 
 @app.route("/infofactagents", methods=["POST"])
 def process_prompt():
+    session_id = request.form.get('SessionID', '').strip()
     incoming_msg = request.form.get('Body', '').strip()
     selected_agents = request.form.get('Agents', '').split(',')  # Get selected agents from the request
     response_text = ""
 
+    # Create a new session if no SessionID is provided
+    if not session_id or session_id not in sessions:
+        session_id = str(uuid.uuid4())
+        sessions[session_id] = {"history": []}  # Example: Store session-specific data like history
+
+    # Retrieve session data
+    session_data = sessions[session_id]
+
     if incoming_msg == "list_agents":
         agents_list = manager.get_agents_list()
         response_text = "Available agents:\n" + "\n".join([f"{agent['name']} - {agent['description']}" for agent in agents_list])
-        return response_text, 200
+        return {"SessionID": session_id, "Response": response_text}, 200
 
     elif incoming_msg == "system_prompt":
-        return SYSTEM_PROMPT, 200
+        return {"SessionID": session_id, "Response": SYSTEM_PROMPT}, 200
 
     else:
         try:
             # Check if no agents were selected
             if not selected_agents or selected_agents == ['']:
-                return "Error: No agents selected. Please select at least one agent.", 400
+                return {"SessionID": session_id, "Error": "No agents selected. Please select at least one agent."}, 400
 
             # Process the article with selected agents
             formatted_output = []
@@ -97,15 +110,18 @@ def process_prompt():
                 agent_data = manager.agents.get(agent_name)
                 if agent_data and hasattr(agent_data["instance"], "process_article"):
                     result = agent_data["instance"].process_article(incoming_msg)
-                    formatted_output.append(f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n**{agent_name}**\n\n{result}\n")
+                    formatted_output.append(f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n**{agent_name}**\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n{result}\n")
 
             # Combine formatted output
             response_text = "\n".join(formatted_output)
+
+            # Optionally store the response in the session history
+            session_data["history"].append({"input": incoming_msg, "output": response_text})
+
         except Exception as e:
             response_text = f"Error processing your prompt: {str(e)}"
 
-        return response_text, 200
-
+        return {"SessionID": session_id, "Response": response_text}, 200
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
