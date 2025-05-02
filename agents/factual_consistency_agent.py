@@ -166,7 +166,7 @@ class FactualConsistencyAgent:
         evaluations = {}
         for line in chatgpt_reply.split("\n"):
             if ": " in line:
-                claim, result = line.split(": ", 1)
+                claim, result = line.rsplit(": ", 1)
                 evaluations[claim.strip()] = result.strip()
         return evaluations
 
