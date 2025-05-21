@@ -1,20 +1,20 @@
-# 🧠 InfoFactAgents – AI-Powered News Trustworthiness Analyzer
+# InfoFactAgents – AI-Powered News Trustworthiness Analyzer
 
 **InfoFactAgents** is a zero-shot, multi-agent framework that evaluates the **trustworthiness of news articles** using large language models (LLMs), retrieval-augmented generation (RAG), and fact-checking tools. It requires no training data and delivers detailed analyses via a web interface or REST API.
 
 ---
 
-## 🚀 Features
+## Features
 
-- 🔍 **Multiple Evaluation Agents** (sentiment, metadata, factual accuracy)
-- 🧠 **LLM-Powered Analysis** (GPT-3.5/GPT-4o)
-- 🔄 **RAG-style Contextual Reasoning**
-- 🌐 **Gradio Interface + REST API**
-- 🧪 **Zero-Shot Classification** (no pre-labeling needed)
+- **Multiple Evaluation Agents** (sentiment, metadata, factual accuracy)
+- **LLM-Powered Analysis** (GPT-3.5/GPT-4o)
+- **RAG-style Contextual Reasoning**
+- **Gradio Interface + REST API**
+- **Zero-Shot Classification** (no pre-labeling needed)
 
 ---
 
-## 🧱 Architecture Overview
+## Architecture Overview
 
 ### Frontend
 
@@ -30,7 +30,7 @@
 
 ---
 
-## 🧠 Evaluation Agents
+## Evaluation Agents
 
 Each agent is a standalone class with a `process_article(text)` method.
 
@@ -44,7 +44,7 @@ All results are returned in Markdown format with added icons for clarity.
 
 ---
 
-## 🔄 Data Flow Summary
+## Data Flow Summary
 
 1. **User submits** an article or URL via Gradio or API.
 2. **Backend loads** the selected agents.
@@ -54,7 +54,7 @@ All results are returned in Markdown format with added icons for clarity.
 
 ---
 
-## 🛠️ Technologies
+## Technologies
 
 | Component      | Tech Used           |
 |----------------|---------------------|
